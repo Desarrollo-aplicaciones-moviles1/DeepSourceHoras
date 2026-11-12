@@ -1,5 +1,10 @@
 package com.example.deepsourcehoras.ui.screen
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,13 +26,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.deepsourcehoras.model.RegistroHorasUiState
 import com.example.deepsourcehoras.ui.components.CampoDesplegable
@@ -44,6 +52,20 @@ fun RegistroHorasScreen(
     viewModel: RegistroHorasViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Android 13 o superior: pide el permiso de notificaciones la primera vez
+    val pedirPermiso = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            pedirPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     RegistroHorasScreen(
         state = state,

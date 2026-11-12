@@ -6,6 +6,7 @@ import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deepsourcehoras.model.CronometroStorage
+import com.example.deepsourcehoras.model.Notificaciones
 import com.example.deepsourcehoras.model.RegistroHorasErrores
 import com.example.deepsourcehoras.model.RegistroHorasUiState
 import com.example.deepsourcehoras.widget.DsHorasWidget
@@ -197,6 +198,15 @@ class RegistroHorasViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun onRegistrarClick(onSuccess: () -> Unit) {
-        if (validar()) onSuccess()
+        if (validar()) {
+            val estado = _uiState.value
+            Notificaciones.mostrarHorasRegistradas(
+                contexto,
+                estado.proyecto,
+                estado.horas.toIntOrNull() ?: 0,
+                estado.minutos.toIntOrNull() ?: 0
+            )
+            onSuccess()
+        }
     }
 }
