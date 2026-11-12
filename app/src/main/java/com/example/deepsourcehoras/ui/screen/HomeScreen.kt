@@ -14,13 +14,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.deepsourcehoras.model.HomeUiState
 import com.example.deepsourcehoras.model.Proyecto
 import com.example.deepsourcehoras.model.RegistroHoras
+import com.example.deepsourcehoras.ui.components.BarraProgreso
 import com.example.deepsourcehoras.ui.theme.DeepSourceHorasTheme
 import com.example.deepsourcehoras.ui.viewmodel.HomeViewModel
 
@@ -36,6 +38,7 @@ import com.example.deepsourcehoras.ui.viewmodel.HomeViewModel
 fun HomeScreen(
     userName: String,
     onRegistrarHoras: () -> Unit,
+    onVerProyectos: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -43,7 +46,8 @@ fun HomeScreen(
     HomeScreen(
         state = state,
         userName = userName,
-        onRegistrarHoras = onRegistrarHoras
+        onRegistrarHoras = onRegistrarHoras,
+        onVerProyectos = onVerProyectos
     )
 }
 
@@ -53,7 +57,8 @@ fun HomeScreen(
 fun HomeScreen(
     state: HomeUiState,
     userName: String,
-    onRegistrarHoras: () -> Unit
+    onRegistrarHoras: () -> Unit,
+    onVerProyectos: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -75,8 +80,16 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Proyectos activos", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Proyectos activos", style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = onVerProyectos) {
+                    Text("Ver todos")
+                }
+            }
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     state.proyectos.forEach { proyecto ->
@@ -121,8 +134,8 @@ private fun ProyectoItem(proyecto: Proyecto) {
             Text(proyecto.nombre)
             Text("${proyecto.horas}h")
         }
-        LinearProgressIndicator(
-            progress = { proyecto.progreso },
+        BarraProgreso(
+            progreso = proyecto.progreso,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp)
@@ -154,7 +167,8 @@ fun HomeScreenPreview() {
                 registros = listOf(RegistroHoras("Maquetado", "Rediseño Web · Hoy", "2h 15min"))
             ),
             userName = "Usuario",
-            onRegistrarHoras = {}
+            onRegistrarHoras = {},
+            onVerProyectos = {}
         )
     }
 }

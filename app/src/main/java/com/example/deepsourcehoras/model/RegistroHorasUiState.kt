@@ -7,5 +7,9 @@ data class RegistroHorasUiState(
     val minutos: String = "",
     val tarea: String = "",
     val proyectos: List<String> = emptyList(),
+    // Cronómetro
+    val corriendo: Boolean = false,
+    val segundos: Int = 0,
+    val horaInicio: String? = null,
     val errores: RegistroHorasErrores = RegistroHorasErrores()
 )

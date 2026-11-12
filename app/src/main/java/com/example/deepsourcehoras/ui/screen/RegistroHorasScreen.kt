@@ -1,5 +1,6 @@
 package com.example.deepsourcehoras.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,10 +25,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.deepsourcehoras.model.RegistroHorasUiState
+import com.example.deepsourcehoras.ui.components.CampoDesplegable
+import com.example.deepsourcehoras.ui.components.CampoFecha
 import com.example.deepsourcehoras.ui.components.CampoTexto
 import com.example.deepsourcehoras.ui.theme.DeepSourceHorasTheme
 import com.example.deepsourcehoras.ui.viewmodel.RegistroHorasViewModel
@@ -36,6 +40,7 @@ import com.example.deepsourcehoras.ui.viewmodel.RegistroHorasViewModel
 @Composable
 fun RegistroHorasScreen(
     onBack: () -> Unit,
+    onRegistrado: (proyecto: String, horas: Int, minutos: Int, dia: String) -> Unit,
     viewModel: RegistroHorasViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -48,7 +53,18 @@ fun RegistroHorasScreen(
         onHorasChange = viewModel::onHorasChange,
         onMinutosChange = viewModel::onMinutosChange,
         onTareaChange = viewModel::onTareaChange,
-        onRegistrarClick = { viewModel.onRegistrarClick(onBack) }
+        onIniciarClick = viewModel::onIniciarClick,
+        onFinalizarClick = viewModel::onFinalizarClick,
+        onRegistrarClick = {
+            viewModel.onRegistrarClick {
+                onRegistrado(
+                    state.proyecto,
+                    state.horas.toIntOrNull() ?: 0,
+                    state.minutos.toIntOrNull() ?: 0,
+                    state.dia
+                )
+            }
+        }
     )
 }
 
@@ -63,6 +79,8 @@ fun RegistroHorasScreen(
     onHorasChange: (String) -> Unit,
     onMinutosChange: (String) -> Unit,
     onTareaChange: (String) -> Unit,
+    onIniciarClick: () -> Unit,
+    onFinalizarClick: () -> Unit,
     onRegistrarClick: () -> Unit
 ) {
     Scaffold(
@@ -87,15 +105,15 @@ fun RegistroHorasScreen(
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // El botón "Iniciar" se conectará después con el widget
                 OutlinedButton(
-                    onClick = { },
+                    onClick = if (state.corriendo) onFinalizarClick else onIniciarClick,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Iniciar")
+                    Text(if (state.corriendo) "Finalizar" else "Iniciar")
                 }
                 Button(
                     onClick = onRegistrarClick,
+                    enabled = !state.corriendo,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Registrar")
@@ -109,19 +127,30 @@ fun RegistroHorasScreen(
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // TEMPORAL: estos 3 campos se cambian por el menú desplegable
-            // y el selector de fecha en el siguiente paso
-            CampoTexto(
+            AnimatedVisibility(visible = state.corriendo) {
+                Text(
+                    text = formatearCronometro(state.segundos),
+                    style = MaterialTheme.typography.displayMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp)
+                )
+            }
+
+            CampoDesplegable(
                 valor = state.proyecto,
                 label = "Proyecto",
                 error = state.errores.proyecto,
-                onChange = onProyectoChange
+                opciones = state.proyectos,
+                onSeleccion = onProyectoChange
             )
-            CampoTexto(
+            CampoFecha(
                 valor = state.dia,
                 label = "Día",
                 error = state.errores.dia,
-                onChange = onDiaChange
+                onFechaSeleccionada = onDiaChange
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -131,6 +160,7 @@ fun RegistroHorasScreen(
                     error = state.errores.horas,
                     onChange = onHorasChange,
                     tipoTeclado = KeyboardType.Number,
+                    enabled = !state.corriendo,
                     modifier = Modifier.weight(1f)
                 )
                 CampoTexto(
@@ -139,8 +169,20 @@ fun RegistroHorasScreen(
                     error = state.errores.minutos,
                     onChange = onMinutosChange,
                     tipoTeclado = KeyboardType.Number,
+                    enabled = !state.corriendo,
                     modifier = Modifier.weight(1f)
                 )
+            }
+
+            if (!state.corriendo) {
+                state.horaInicio?.let {
+                    Text(
+                        text = "Calculado desde las $it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 16.dp)
+                    )
+                }
             }
 
             state.errores.tiempo?.let {
@@ -162,18 +204,29 @@ fun RegistroHorasScreen(
     }
 }
 
+// Convierte los segundos a formato 00:00:00
+private fun formatearCronometro(segundos: Int): String =
+    String.format("%02d:%02d:%02d", segundos / 3600, (segundos % 3600) / 60, segundos % 60)
+
 @Preview(showBackground = true)
 @Composable
 fun RegistroHorasScreenPreview() {
     DeepSourceHorasTheme {
         RegistroHorasScreen(
-            state = RegistroHorasUiState(dia = "29/10/2026"),
+            state = RegistroHorasUiState(
+                dia = "29/10/2026",
+                proyectos = listOf("Rediseño Web", "App Móvil"),
+                corriendo = true,
+                segundos = 3725
+            ),
             onBack = {},
             onProyectoChange = {},
             onDiaChange = {},
             onHorasChange = {},
             onMinutosChange = {},
             onTareaChange = {},
+            onIniciarClick = {},
+            onFinalizarClick = {},
             onRegistrarClick = {}
         )
     }
